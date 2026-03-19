@@ -1,10 +1,11 @@
 import { StatusCodes } from 'http-status-codes';
+import jwt from 'jsonwebtoken';
 import { LoginDto, RegisterDto } from '../dtos/auth.dto';
 import { ApiError } from '../errors/ApiError';
-import { IUserPayload } from '../interfaces/auth.interface';
+import { IRefreshTokenPayload, IUserPayload } from '../interfaces/auth.interface';
 import { UserRepository } from '../repositories/user.repository';
 import { comparePassword, hashPassword } from '../utils/password';
-import { signJwt } from '../utils/jwt';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 
 export class AuthService {
   constructor(private readonly userRepository: UserRepository = new UserRepository()) {}
@@ -42,10 +43,47 @@ export class AuthService {
     }
 
     const jwtPayload: IUserPayload = { userId: user.id, email: user.email };
-    const token = signJwt(jwtPayload);
+    const accessToken = signAccessToken(jwtPayload);
+    const refreshToken = signRefreshToken({ ...jwtPayload, tokenVersion: user.refreshTokenVersion });
 
     return {
-      token,
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    };
+  }
+
+  async refresh(refreshToken: string) {
+    let payload: IRefreshTokenPayload;
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch (error) {
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token expired');
+      }
+
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid refresh token');
+    }
+
+    const user = await this.userRepository.findById(payload.userId);
+    if (!user) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Invalid refresh token');
+    }
+
+    if (user.refreshTokenVersion !== payload.tokenVersion) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Refresh token has been rotated');
+    }
+
+    const nextTokenVersion = await this.userRepository.incrementRefreshTokenVersion(user.id);
+    const newPayload: IUserPayload = { userId: user.id, email: user.email };
+
+    return {
+      accessToken: signAccessToken(newPayload),
+      refreshToken: signRefreshToken({ ...newPayload, tokenVersion: nextTokenVersion }),
       user: {
         id: user.id,
         name: user.name,

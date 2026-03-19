@@ -10,7 +10,7 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({
-  origin: "http://localhost:3001", // frontend URL
+  origin: process.env.CORS_ORIGIN ?? 'http://localhost:3001',
   credentials: true,
 }));
 app.use(httpLogger);

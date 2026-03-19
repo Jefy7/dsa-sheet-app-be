@@ -37,6 +37,7 @@ Production-ready backend API for a DSA Sheet platform built with Node.js, Expres
 ### Auth
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/refresh`
 - `GET /api/auth/me`
 
 ### Topics
@@ -53,6 +54,8 @@ Copy `.env.example` to `.env` and configure:
 - `DB_URL`
 - `JWT_SECRET`
 - `JWT_EXPIRES_IN`
+- `JWT_REFRESH_SECRET`
+- `JWT_REFRESH_EXPIRES_IN`
 - `PORT`
 - `CORS_ORIGIN`
 

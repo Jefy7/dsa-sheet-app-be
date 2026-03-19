@@ -20,4 +20,11 @@ export class UserRepository {
   save(user: Partial<User>): Promise<User> {
     return this.repo.save(this.repo.create(user));
   }
+
+  async incrementRefreshTokenVersion(userId: string): Promise<number> {
+    await this.repo.increment({ id: userId }, 'refreshTokenVersion', 1);
+    const updatedUser = await this.findById(userId);
+
+    return updatedUser?.refreshTokenVersion ?? 0;
+  }
 }
