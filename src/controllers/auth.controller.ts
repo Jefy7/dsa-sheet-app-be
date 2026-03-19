@@ -1,10 +1,35 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { AUTH_COOKIE_NAME } from '../constants/auth.constants';
+import {
+  ACCESS_TOKEN_MAX_AGE_MS,
+  AUTH_COOKIE_NAME,
+  REFRESH_COOKIE_NAME,
+  REFRESH_TOKEN_MAX_AGE_MS,
+} from '../constants/auth.constants';
+import { ApiError } from '../errors/ApiError';
 import { AuthService } from '../services/auth.service';
 
 export class AuthController {
   constructor(private readonly authService: AuthService = new AuthService()) { }
+
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+    const secureCookie = process.env.NODE_ENV === 'production';
+    const sameSite = secureCookie ? 'none' : 'lax';
+
+    res.cookie(AUTH_COOKIE_NAME, accessToken, {
+      httpOnly: true,
+      secure: secureCookie,
+      sameSite,
+      maxAge: ACCESS_TOKEN_MAX_AGE_MS,
+    });
+
+    res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
+      httpOnly: true,
+      secure: secureCookie,
+      sameSite,
+      maxAge: REFRESH_TOKEN_MAX_AGE_MS,
+    });
+  }
 
   register = async (req: Request, res: Response) => {
     const user = await this.authService.register(req.body);
@@ -17,18 +42,27 @@ export class AuthController {
 
   login = async (req: Request, res: Response) => {
     const result = await this.authService.login(req.body);
-
-    res.cookie(AUTH_COOKIE_NAME, result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-    });
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
 
     res.status(StatusCodes.OK).json({
       success: true,
       message: 'Login successful',
       user: result.user,
+    });
+  };
+
+  refresh = async (req: Request, res: Response) => {
+    const currentRefreshToken = req.cookies[REFRESH_COOKIE_NAME];
+    if (!currentRefreshToken) {
+      throw new ApiError(StatusCodes.UNAUTHORIZED, 'Missing refresh token');
+    }
+
+    const result = await this.authService.refresh(currentRefreshToken);
+    this.setAuthCookies(res, result.accessToken, result.refreshToken);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Token refreshed successfully',
     });
   };
 
