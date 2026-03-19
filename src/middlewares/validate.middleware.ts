@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { validateDto } from '../validators/validateDto';
 
 export const validateBody = <T extends object>(dtoClass: new () => T) => {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       req.body = await validateDto(dtoClass, req.body);
       next();

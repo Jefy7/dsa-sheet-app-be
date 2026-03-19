@@ -4,9 +4,9 @@ import { UpdateProgressDto } from '../dtos/progress.dto';
 import { ProgressService } from '../services/progress.service';
 
 export class ProgressController {
-  constructor(private readonly progressService: ProgressService = new ProgressService()) {}
+  constructor(private readonly progressService: ProgressService = new ProgressService()) { }
 
-  getProgress = async (req: Request, res: Response): Promise<void> => {
+  getProgress = async (req: Request, res: Response) => {
     const items = await this.progressService.getUserProgress(req.user!.userId);
     res.status(StatusCodes.OK).json({
       success: true,
@@ -15,7 +15,7 @@ export class ProgressController {
     });
   };
 
-  updateProgress = async (req: Request<unknown, unknown, UpdateProgressDto>, res: Response): Promise<void> => {
+  updateProgress = async (req: Request<unknown, unknown, UpdateProgressDto>, res: Response) => {
     const progress = await this.progressService.updateProgress(req.user!.userId, req.body);
     res.status(StatusCodes.OK).json({
       success: true,
