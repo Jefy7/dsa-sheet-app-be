@@ -3,6 +3,8 @@ import { UpdateProgressDto } from '../dtos/progress.dto';
 import { ApiError } from '../errors/ApiError';
 import { ProblemRepository } from '../repositories/problem.repository';
 import { ProgressRepository } from '../repositories/progress.repository';
+import { redis } from '../lib/redis';
+import { UserProgress } from '../entities/UserProgress';
 
 export class ProgressService {
   constructor(
@@ -10,8 +12,18 @@ export class ProgressService {
     private readonly problemRepository: ProblemRepository = new ProblemRepository(),
   ) {}
 
-  getUserProgress(userId: string) {
-    return this.progressRepository.findByUser(userId);
+  async getUserProgress(userId: string) {
+    const key = `progress:${userId}`;
+    const cached = await redis.get<UserProgress[]>(key);
+
+    if (cached) {
+      return cached;
+    }
+
+    const progress = await this.progressRepository.findByUser(userId);
+    await redis.set(key, progress, { ex: 300 });
+
+    return progress;
   }
 
   async updateProgress(userId: string, payload: UpdateProgressDto) {
@@ -20,6 +32,11 @@ export class ProgressService {
       throw new ApiError(StatusCodes.NOT_FOUND, 'Problem not found');
     }
 
-    return this.progressRepository.upsertProgress(userId, payload.problemId, payload.completed);
+    const updatedProgress = await this.progressRepository.upsertProgress(userId, payload.problemId, payload.completed);
+
+    await redis.del(`progress:${userId}`);
+    await redis.flushall();
+
+    return updatedProgress;
   }
 }

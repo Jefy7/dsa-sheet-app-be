@@ -58,6 +58,8 @@ Copy `.env.example` to `.env` and configure:
 - `JWT_REFRESH_EXPIRES_IN`
 - `PORT`
 - `CORS_ORIGIN`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
 ## Run
 
