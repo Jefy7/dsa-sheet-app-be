@@ -12,23 +12,35 @@ import { AuthService } from '../services/auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService = new AuthService()) { }
 
-  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+  private getCookieOptions(maxAge: number) {
     const secureCookie = process.env.NODE_ENV === 'production';
     const sameSite = secureCookie ? 'none' : 'lax';
 
-    res.cookie(AUTH_COOKIE_NAME, accessToken, {
+    return {
       httpOnly: true,
       secure: secureCookie,
       sameSite,
-      maxAge: ACCESS_TOKEN_MAX_AGE_MS,
-    });
+      maxAge,
+    } as const;
+  }
 
-    res.cookie(REFRESH_COOKIE_NAME, refreshToken, {
-      httpOnly: true,
-      secure: secureCookie,
-      sameSite,
-      maxAge: REFRESH_TOKEN_MAX_AGE_MS,
-    });
+  private setAuthCookies(res: Response, accessToken: string, refreshToken: string) {
+    res.cookie(
+      AUTH_COOKIE_NAME,
+      accessToken,
+      this.getCookieOptions(ACCESS_TOKEN_MAX_AGE_MS),
+    );
+
+    res.cookie(
+      REFRESH_COOKIE_NAME,
+      refreshToken,
+      this.getCookieOptions(REFRESH_TOKEN_MAX_AGE_MS),
+    );
+  }
+
+  private clearAuthCookies(res: Response) {
+    res.clearCookie(AUTH_COOKIE_NAME, this.getCookieOptions(0));
+    res.clearCookie(REFRESH_COOKIE_NAME, this.getCookieOptions(0));
   }
 
   register = async (req: Request, res: Response) => {
@@ -72,6 +84,16 @@ export class AuthController {
       success: true,
       message: 'Current user fetched successfully',
       user: user,
+    });
+  };
+
+  logout = async (req: Request, res: Response) => {
+    await this.authService.logout(req.user!.userId);
+    this.clearAuthCookies(res);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      message: 'Logout successful',
     });
   };
 }
