@@ -106,4 +106,13 @@ export class AuthService {
       updatedAt: user.updatedAt,
     };
   }
+
+  async logout(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new ApiError(StatusCodes.NOT_FOUND, 'User not found');
+    }
+
+    await this.userRepository.incrementRefreshTokenVersion(user.id);
+  }
 }

@@ -12,5 +12,6 @@ router.post('/register', validateBody(RegisterDto), controller.register);
 router.post('/login', authRateLimiter, validateBody(LoginDto), controller.login);
 router.post('/refresh', controller.refresh);
 router.get('/me', authGuard, controller.me);
+router.post('/logout', authGuard, controller.logout);
 
 export default router;
