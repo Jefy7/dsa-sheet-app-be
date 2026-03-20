@@ -10,27 +10,16 @@ export class TopicRepository {
   }
 
   async findPaginated(page: number, limit: number): Promise<[Topic[], number]> {
+    console.log("befor query")
     return this.repo.findAndCount({
-      relations: { problems: true },
       select: {
         id: true,
         title: true,
         description: true,
         orderIndex: true,
         createdAt: true,
-        problems: {
-          id: true,
-          title: true,
-          difficulty: true,
-          orderIndex: true,
-          topicId: true,
-          youtubeLink: true,
-          leetcodeLink: true,
-          codeforcesLink: true,
-          articleLink: true,
-        },
       },
-      order: { orderIndex: 'ASC', problems: { orderIndex: 'ASC' } },
+      order: { orderIndex: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
     });

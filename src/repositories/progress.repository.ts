@@ -11,8 +11,8 @@ export class ProgressRepository {
 
   findByUser(userId: string): Promise<UserProgress[]> {
     return this.repo.find({
-      where: { userId },
-      relations: { problem: { topic: true } },
+      where: { userId, completed: true },
+      relations: { problem: true },
       order: { updatedAt: 'DESC' },
     });
   }
