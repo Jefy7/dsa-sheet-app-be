@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -19,6 +20,7 @@ export class Topic {
   description?: string;
 
   @Column({ type: 'int', default: 0 })
+  @Index('idx_topics_order')
   orderIndex!: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
